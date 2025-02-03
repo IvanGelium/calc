@@ -2,13 +2,23 @@ const btnScr = document.querySelector(".calc-screen");
 const firstRow = document.querySelector(".first-row");
 const numbers = document.querySelector(".numbers");
 const sideRow = document.querySelector(".side-row");
+const canNotBeFirst = ["/","*","%","^","=","."];
+const endStageOperators = ["/","*",];
+const CanBeFirst = ["+","-"];
+const canNotBeLast = [".",];
+let modifOne = "";
+let modifTwo = "";
+let fDot = false;
+let sDot = false;
+let plusMinus = false;
 let btnId = -1;
+let operationsStage = 0;
 let onScreenString = "";
 let Buttons = [];
 let firstOp = "";
+let currentOper = "";
 let secondOp = "";  
-let isSecond = false;
-let isDot = false; 
+
 
 
 onload = uiCrt ();
@@ -17,10 +27,6 @@ function uiCrt() {
     simpleNumbersCreation();
     firstRowCreation ();
     sideRowCreation ();
-}
-
-function btnMutate () {
-    
 }
 
 function Button (place, btnValue) {
@@ -39,20 +45,23 @@ function Button (place, btnValue) {
 
 }
 
-function onScreen (symb) {
-    onScreenString += symb;
-    btnScr.firstElementChild.textContent = onScreenString;
+function onScreen () {
+    btnScr.firstElementChild.textContent = firstOp+modifOne+" "+currentOper+" "+secondOp+modifTwo;
 
 
 }
 
 function clrScreen() {
     onScreenString = "";
-    btnScr.firstElementChild.textContent = onScreenString;
-    isDot = false;
-    isSecond1 = false;
+    operationsStage = 0;
+    btnScr.firstElementChild.textContent = "";
     firstOp = "";
     secondOp = "";
+    currentOper ="";
+    fDot = false;
+    sDot = false;
+    modifOne = "";
+    modifTwo = "";
 
 }
 
@@ -122,94 +131,81 @@ function desider (symb) {
         return;
     }
 
-    if (isSecond == false) {
-        if (symb == ".") {
-            if  (onScreenString == "") {
-                return;
-            }
-    
-            if (isDot == true) {
-                return;
-            }
-    
-            if (onScreenString > "") {
-                isDot = true;
-                onScreen(symb);
-    
-            }
-        }
-        
-        if (typeof symb == "number") {
-            onScreen(symb);
-        }
+    switch (operationsStage) {
+        case 0:
+            firstVariable (symb);
+            break;
+        case 1:
+            SecondVariable (symb);
+            break;
+        case 2:
+            break;
+        default:
+            break;
     }
+}
 
-    if (isSecond == true) {
-        if (symb == ".") {
-            if  (secondOp == "") {
-                return;
-            }
-    
-            if (isDot == true) {
-                return;
-            }
-    
-            if (secondOp > "") {
-                isDot = true;
-                secondOp += symb;
-                onScreen(symb);
-    
-            }
-        }
-        
-        if (typeof symb == "number") {
-            secondOp += symb;
-            onScreen(symb);
-        }
-    }
 
-    if (typeof symb == 'string') {
-        switch (symb) {
+function firstVariable (symb) {
+    if (firstOp == "") { if (canNotBeFirst.includes(symb,0)) {return}};
+    if (symb == "%" && modifOne == "") {modifOne = "%"};
+    if (symb == "." && fDot == false) {firstOp += symb; fDot = true;}
+    if (CanBeFirst.includes(symb,0)) {plusMinus = true};
+    if ((plusMinus == true && (symb == "+" || symb =="-")) || endStageOperators.includes(symb,0)) {
+        currentOper = symb;
+        plusMinus = false;
+        operationsStage = 1};
+    if (typeof symb == "number") {firstOp += symb};  
+    if (symb == "^") {firstOp = Number(firstOp)* Number(firstOp)+"";}
+    onScreen();
+}
+
+function SecondVariable (symb) {
+    if (secondOp == "") { if (canNotBeFirst.includes(symb,0)) {return}};
+    if (symb == "%" && modifTwo == "") {modifTwo = "%"};
+    if (symb == "." && sDot == false) {secondOp += symb; sDot = true;}
+    if (CanBeFirst.includes(symb,0)) {plusMinus = true};
+    if (symb == "^") {secondOp = Number(secondOp)* Number(secondOp)+"";}
+    if ((plusMinus == true && (symb == "+" || symb =="-")) || endStageOperators.includes(symb,0) || symb == "=") {
+        desideOperator(symb);}
+    if (typeof symb == "number") {secondOp += symb};  
+    onScreen();
+}
+
+function desideOperator (symb) {
+
+    if (modifOne == "%") {firstOp = Number(firstOp)/100;}
+    if (modifTwo == "%") {secondOp = Number(secondOp)/100;}
+
+    switch (currentOper) {
 
             case "/":
-                if (onScreenString == "") {
-                    return;
-                }
-
-                if (isSecond == false) {
-                    firstOp = Number(onScreenString);
-                    onScreen(symb);
-                    isSecond = true;
-                    isDot = false;
-                    return;
-                }
-
-                if (isSecond == true) {
-                    onScreenString = "";
-                    isDot = false;
-                    firstOp = firstOp/secondOp; 
-                    secondOp = "";
-                    onScreen(firstOp);
-                }
-
-
+                firstOp = Number(firstOp)/Number(secondOp);
                 break;
+
             case "*":
+                firstOp = Number(firstOp)*Number(secondOp);
                 break;
-            case "^":
-                break;
+
             case "-":
+                firstOp = Number(firstOp)-Number(secondOp);
                 break;
+
             case "+":
+                firstOp = Number(firstOp)+Number(secondOp);
                 break;
-            case "%":
-                break;
+
             default:
                 break;
 
         }
-    }
+    secondOp = "";
+    if (symb != "=") {currentOper = symb; operationsStage = 1;}
+    if (symb == "=") {currentOper = ""; operationsStage = 0;}
+    firstOp = String(firstOp);
+    firstOp.includes(".") ? fDot = true : fDot = false;
+    sDot = false;
+    modifOne = "";
+    modifTwo = "";
 
 }
-
-
